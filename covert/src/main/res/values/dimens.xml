@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <dimen name="triangle_cornerflag_width">16dp</dimen>
+    <dimen name="circular_cornerflag_width">24dp</dimen>
+</resources>

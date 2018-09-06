@@ -1,0 +1,37 @@
+if (project.plugins.hasPlugin("com.android.library")) {
+
+    apply plugin: 'digital.wup.android-maven-publish'
+
+    project.afterEvaluate {
+        task sourcesJar(type: Jar) {
+            from android.sourceSets.main.java.srcDirs
+        }
+    }
+
+    publishing {
+        publications {
+            aar(MavenPublication) {
+                from project.components.android
+                artifact project.sourcesJar {
+                    // not required, includes sourcesJar with correct classifier
+                    classifier "sources"
+                }
+                groupId project.ext.group
+                artifactId project.name
+                version project.ext.version
+            }
+        }
+
+        repositories {
+            maven {
+                name 'Bintray'
+                url "https://api.bintray.com/maven/${project.org}/${project.repo}/${project.name}/;publish=1"
+
+                credentials {
+                    username BINTRAY_USERNAME
+                    password BINTRAY_API_KEY
+                }
+            }
+        }
+    }
+}

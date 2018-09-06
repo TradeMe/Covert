@@ -2,6 +2,8 @@
 
 ![Covert](./art/covert_demo.gif)
 
+[ ![Download](https://api.bintray.com/packages/trademe/Covert/covert/images/download.svg) ](https://bintray.com/trademe/Covert/covert/_latestVersion)
+
  Covert is an Android Library for easily implementing Material Swipe Actions in a RecyclerView. The design of the animations was based heavily around the [Swipe Action Gestures](https://material.io/design/interaction/gestures.html#types-of-gestures) demonstrated in the Material Interaction guidelines.
 
 ## Download

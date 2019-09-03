@@ -56,7 +56,8 @@ internal class IconChangeColorCanvasDrawable(
                 ),
                 drawable = icon,
                 colorInt = currentIconColor,
-                iconSizePx = iconSizePx)
+                iconSizePx = iconSizePx,
+                circularClipRadius = null)
     }
 
     private fun createColorInterpolationAnimator() = ValueAnimator().apply {

@@ -14,6 +14,7 @@ import android.support.annotation.DrawableRes
 import android.support.graphics.drawable.VectorDrawableCompat
 import android.support.v4.content.ContextCompat
 import android.support.v4.view.animation.FastOutLinearInInterpolator
+import android.support.v4.widget.SwipeRefreshLayout
 import android.support.v7.widget.RecyclerView
 import android.support.v7.widget.helper.ItemTouchHelper
 import android.view.LayoutInflater
@@ -90,7 +91,8 @@ class Covert private constructor(
         covertConfig: Config,
         private val isViewHolderActive: ViewHolderCheckCallback,
         private val isViewHolderEnabled: ViewHolderCheckCallback,
-        private val onSwipe: ViewHolderNotifyCallback
+        private val onSwipe: ViewHolderNotifyCallback,
+        private val pullToRefreshView: SwipeRefreshLayout?
 ) : ItemTouchHelper.Callback() {
 
     // Configuration
@@ -152,6 +154,21 @@ class Covert private constructor(
     private fun buildInactiveStateDrawables(context: Context, covertConfig: Config): List<CanvasDrawable> {
         val iconInset = ((ICON_DEFAULT_SIZE_DP / 2) + ICON_MARGIN_DP).toPx(context)
 
+        // Background icon lift drawable
+        val backgroundIconDrawable = IconLiftCanvasDrawable(
+            liftStartProportion = ANIMATION_THRESHOLD_PROPORTION - ICON_LIFT_ANIMATION_OFFSET_PROPORTION,
+            bounceAnimationData = AnimationData(
+                startProportion = SWIPE_THRESHOLD_PROPORTION,
+                duration = BOUNCE_DURATION
+            ),
+            maxIconScaleProportion = MAX_LIFT_SCALE,
+            iconInsetPx = iconInset.toInt(),
+            iconSizePx = ICON_DEFAULT_SIZE_DP.toPx(context).toInt(),
+            iconColor = ContextCompat.getColor(context, covertConfig.inactiveIcon.startColorRes),
+            icon = (VectorDrawableCompat.create(context.resources, covertConfig.inactiveIcon.iconRes, context.theme) as Drawable).mutate(),
+            clipStartProportion = null
+        )
+
         // Circular reveal drawable
         val backgroundDrawable = CircularRevealCanvasDrawable(
                 interactionStartProportion = ANIMATION_THRESHOLD_PROPORTION,
@@ -165,28 +182,22 @@ class Covert private constructor(
                 }
         )
 
-        // Icon lift drawable
-        val foregroundDrawable = IconLiftCanvasDrawable(
+        // Foreground icon lift drawable
+        val foregroundIconDrawable = IconLiftCanvasDrawable(
                 liftStartProportion = ANIMATION_THRESHOLD_PROPORTION - ICON_LIFT_ANIMATION_OFFSET_PROPORTION,
                 bounceAnimationData = AnimationData(
                         startProportion = SWIPE_THRESHOLD_PROPORTION,
                         duration = BOUNCE_DURATION
                 ),
-                colorChangeAnimationData = AnimationData(
-                        startProportion = ANIMATION_THRESHOLD_PROPORTION + ICON_CHANGE_COLOR_OFFSET_PROPORTION,
-                        duration = REVEAL_COLOR_CHANGE_DURATION
-                ),
                 maxIconScaleProportion = MAX_LIFT_SCALE,
                 iconInsetPx = iconInset.toInt(),
                 iconSizePx = ICON_DEFAULT_SIZE_DP.toPx(context).toInt(),
-                iconColor = ColorChange(
-                        start = ContextCompat.getColor(context, covertConfig.inactiveIcon.startColorRes),
-                        end = ContextCompat.getColor(context, covertConfig.inactiveIcon.endColorRes)
-                ),
-                icon = VectorDrawableCompat.create(context.resources, covertConfig.inactiveIcon.iconRes, context.theme) as Drawable
+                iconColor = ContextCompat.getColor(context, covertConfig.inactiveIcon.endColorRes),
+                icon = (VectorDrawableCompat.create(context.resources, covertConfig.inactiveIcon.iconRes, context.theme) as Drawable).mutate(),
+                clipStartProportion = ANIMATION_THRESHOLD_PROPORTION
         )
 
-        return listOf(backgroundDrawable, foregroundDrawable)
+        return listOf(backgroundIconDrawable, backgroundDrawable, foregroundIconDrawable)
     }
 
     /**
@@ -240,6 +251,11 @@ class Covert private constructor(
 
     override fun onSwiped(viewHolder: RecyclerView.ViewHolder, direction: Int) {
         // no-op
+    }
+
+    override fun onSelectedChanged(viewHolder: RecyclerView.ViewHolder?, actionState: Int) {
+        super.onSelectedChanged(viewHolder, actionState)
+        pullToRefreshView?.isEnabled = actionState != ItemTouchHelper.ACTION_STATE_SWIPE
     }
 
     override fun convertToAbsoluteDirection(flags: Int, layoutDirection: Int): Int {
@@ -566,14 +582,40 @@ class Covert private constructor(
             /**
              * The callback triggered by Covert when an item is swiped.
              */
-            private val onSwipeCallback: ViewHolderNotifyCallback = { _, _ -> }
+            private val onSwipeCallback: ViewHolderNotifyCallback = { _, _ -> },
+            /**
+             * Specifies the pull-to-refresh view associated with the recycler view,
+             * if any. Covert will disable the pull-to-refresh gesture while the user
+             * is swiping.
+             */
+            private val pullToRefreshView: SwipeRefreshLayout? = null
     ) {
 
+        /**
+         * The callback used by Covert to determine if it should render the
+         * active or inactive graphics.
+         */
         fun setIsActiveCallback(callback: ViewHolderCheckCallback): Builder = copy(viewHolderActiveCallback = callback)
 
+        /**
+         * The callback used by Covert to enable or disable swiping of ViewHolders.
+         * This can be done on either a per-ViewHolder basis, or globally.
+         *
+         * Defaults to enabling swiping on all items.
+         */
         fun setSwipeEnabledCallback(callback: ViewHolderCheckCallback): Builder = copy(isSwipingEnabledCallback = callback)
 
+        /**
+         * The callback triggered by Covert when an item is swiped.
+         */
         fun doOnSwipe(callback: ViewHolderNotifyCallback): Builder = copy(onSwipeCallback = callback)
+
+        /**
+         * Specifies the pull-to-refresh view associated with the recycler view.
+         * Covert will use this to automatically disable the pull-to-refresh gesture
+         * while the user is swiping.
+         */
+        fun disablePullToRefreshOnSwipe(view: SwipeRefreshLayout): Builder = copy(pullToRefreshView = view)
 
         /**
          * Instantiated Covert and attaches it to the given recyclerview
@@ -583,7 +625,8 @@ class Covert private constructor(
                 config,
                 requireNotNull(viewHolderActiveCallback) { "An active callback must be set" },
                 isSwipingEnabledCallback,
-                onSwipeCallback
+                onSwipeCallback,
+                pullToRefreshView
         )
     }
 }

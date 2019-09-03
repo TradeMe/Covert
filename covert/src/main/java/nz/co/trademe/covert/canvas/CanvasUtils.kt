@@ -6,8 +6,8 @@ import android.graphics.Path
 import android.graphics.PorterDuff
 import android.graphics.Rect
 import android.graphics.drawable.Drawable
-import android.support.annotation.ColorInt
-import android.support.annotation.Px
+import androidx.annotation.ColorInt
+import androidx.annotation.Px
 import nz.co.trademe.covert.model.Coordinate
 import nz.co.trademe.covert.model.ParentMetrics
 

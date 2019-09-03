@@ -8,14 +8,16 @@ if (project.plugins.hasPlugin("com.android.library")) {
         }
     }
 
+    task androidSourcesJar(type: Jar) {
+        classifier = 'sources'
+        from android.sourceSets.main.java.source
+    }
+
     publishing {
         publications {
             aar(MavenPublication) {
                 from project.components.android
-                artifact project.sourcesJar {
-                    // not required, includes sourcesJar with correct classifier
-                    classifier "sources"
-                }
+                artifact project.androidSourcesJar
                 groupId project.ext.group
                 artifactId project.name
                 version project.ext.version

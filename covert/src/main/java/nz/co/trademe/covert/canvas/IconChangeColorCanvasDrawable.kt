@@ -5,8 +5,8 @@ import android.animation.ArgbEvaluator
 import android.animation.ValueAnimator
 import android.graphics.Canvas
 import android.graphics.drawable.Drawable
-import android.support.annotation.ColorInt
-import android.support.annotation.Px
+import androidx.annotation.ColorInt
+import androidx.annotation.Px
 import android.view.animation.LinearInterpolator
 import androidx.core.animation.doOnEnd
 import nz.co.trademe.covert.model.*

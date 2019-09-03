@@ -3,9 +3,9 @@ package nz.co.trademe.covert.canvas
 import android.animation.ValueAnimator
 import android.graphics.Canvas
 import android.graphics.drawable.Drawable
-import android.support.annotation.ColorInt
-import android.support.annotation.FloatRange
-import android.support.annotation.Px
+import androidx.annotation.ColorInt
+import androidx.annotation.FloatRange
+import androidx.annotation.Px
 import android.view.animation.OvershootInterpolator
 import androidx.core.animation.doOnEnd
 import nz.co.trademe.covert.model.*

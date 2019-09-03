@@ -1,6 +1,6 @@
 package nz.co.trademe.covert.model
 
-import android.support.annotation.ColorInt
+import androidx.annotation.ColorInt
 
 /**
  * Data class describing a color change

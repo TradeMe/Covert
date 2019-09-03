@@ -1,16 +1,15 @@
 package nz.co.trademe.covert.canvas
 
-import android.animation.ArgbEvaluator
 import android.animation.ValueAnimator
 import android.graphics.Canvas
 import android.graphics.drawable.Drawable
 import android.support.annotation.ColorInt
 import android.support.annotation.FloatRange
 import android.support.annotation.Px
-import android.view.animation.LinearInterpolator
 import android.view.animation.OvershootInterpolator
 import androidx.core.animation.doOnEnd
 import nz.co.trademe.covert.model.*
+import kotlin.math.max
 
 /**
  * Lightweight canvas drawable for handling interactive Icon lift and overshoot animations
@@ -69,7 +68,6 @@ internal class IconLiftCanvasDrawable(
     }
 
     override fun reset() {
-        colorAnimation?.animator?.cancel()
         bounceAnimation?.animator?.cancel()
         bounceAnimation = null
         currentLiftProportion = 1.0F

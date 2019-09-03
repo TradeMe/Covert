@@ -16,28 +16,26 @@ import nz.co.trademe.covert.model.*
  * Lightweight canvas drawable for handling interactive Icon lift and overshoot animations
  */
 internal class IconLiftCanvasDrawable(
-        @FloatRange(from = 0.0, to = 1.0)
-        private val liftStartProportion: Float,
-        private val bounceAnimationData: AnimationData,
-        private val colorChangeAnimationData: AnimationData,
-        @FloatRange(from = 1.0)
-        private val maxIconScaleProportion: Float,
-        private val iconInsetPx: Int,
-        @Px
-        private val iconSizePx: Int,
-        private val iconColor: ColorChange,
-        private val icon: Drawable
+    @FloatRange(from = 0.0, to = 1.0)
+    private val liftStartProportion: Float,
+    private val bounceAnimationData: AnimationData,
+    @FloatRange(from = 1.0)
+    private val maxIconScaleProportion: Float,
+    private val iconInsetPx: Int,
+    @Px
+    private val iconSizePx: Int,
+    @ColorInt
+    private val iconColor: Int,
+    private val icon: Drawable,
+    private val clipStartProportion: Float?
 ) : CanvasDrawable {
 
     override var invalidateCallback: () -> Unit = {}
 
     private var bounceAnimation: CanvasAnimation? = null
-    private var colorAnimation: CanvasAnimation? = null
 
     private var currentLiftProportion: Float = 1.0F
-
-    @ColorInt
-    private var currentIconColor: Int = iconColor.start
+    private var circularClipRadius: Float? = null
 
     override fun onDraw(canvas: Canvas, parentMetrics: ParentMetrics, canvasY: Float, proportion: Float) {
         // Adjust lift
@@ -51,7 +49,7 @@ internal class IconLiftCanvasDrawable(
             proportion >= bounceAnimationData.startProportion && bounceAnimation == null -> {
                 val bounceAnimator = createIconBounceAnimator()
                 bounceAnimation = CanvasAnimation(
-                        animator = bounceAnimator
+                    animator = bounceAnimator
                 )
 
                 bounceAnimator.start()
@@ -63,22 +61,8 @@ internal class IconLiftCanvasDrawable(
             }
         }
 
-        // Adjust color
-        when {
-            proportion < colorChangeAnimationData.startProportion && colorAnimation == null -> {
-                currentIconColor = iconColor.start
-            }
-            proportion >= colorChangeAnimationData.startProportion && colorAnimation == null -> {
-                val colorAnimator = createColorInterpolationAnimator()
-                colorAnimation = CanvasAnimation(
-                        animator = colorAnimator
-                )
-
-                colorAnimator.start()
-            }
-            colorAnimation?.hasEnded == true -> {
-                currentIconColor = iconColor.end
-            }
+        if (clipStartProportion != null) {
+            circularClipRadius = if (bounceAnimation == null) max(0f, (proportion - clipStartProportion) * parentMetrics.width) else parentMetrics.width
         }
 
         drawIcon(canvas, parentMetrics, canvasY)
@@ -88,21 +72,22 @@ internal class IconLiftCanvasDrawable(
         colorAnimation?.animator?.cancel()
         bounceAnimation?.animator?.cancel()
         bounceAnimation = null
-        colorAnimation = null
         currentLiftProportion = 1.0F
-        currentIconColor = iconColor.start
+        circularClipRadius = null
     }
 
     private fun drawIcon(canvas: Canvas, parentMetrics: ParentMetrics, canvasY: Float) {
         canvas.drawDrawable(
-                canvasY = canvasY,
-                centerCoordinate = Coordinate(
-                        x = parentMetrics.width - iconInsetPx.toFloat(),
-                        y = parentMetrics.height / 2F
-                ),
-                drawable = icon,
-                colorInt = currentIconColor,
-                iconSizePx = (iconSizePx * currentLiftProportion).toInt())
+            canvasY = canvasY,
+            centerCoordinate = Coordinate(
+                x = parentMetrics.width - iconInsetPx.toFloat(),
+                y = parentMetrics.height / 2F
+            ),
+            drawable = icon,
+            colorInt = iconColor,
+            iconSizePx = (iconSizePx * currentLiftProportion).toInt(),
+            circularClipRadius = circularClipRadius
+        )
     }
 
     private fun createIconBounceAnimator() = ValueAnimator().apply {
@@ -115,21 +100,6 @@ internal class IconLiftCanvasDrawable(
         }
         doOnEnd {
             bounceAnimation = bounceAnimation?.copy(hasEnded = true)
-        }
-    }
-
-    private fun createColorInterpolationAnimator() = ValueAnimator().apply {
-        val (start, end) = iconColor
-        setIntValues(start, end)
-        setEvaluator(ArgbEvaluator())
-        duration = colorChangeAnimationData.duration
-        interpolator = LinearInterpolator()
-        addUpdateListener { animator ->
-            currentIconColor = animator.animatedValue as Int
-            invalidateCallback()
-        }
-        doOnEnd {
-            colorAnimation = colorAnimation?.copy(hasEnded = true)
         }
     }
 }

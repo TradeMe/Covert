@@ -51,7 +51,12 @@ internal fun Canvas.drawDrawable(
         centerCoordinate: Coordinate,
         drawable: Drawable,
         @ColorInt colorInt: Int,
-        @Px iconSizePx: Int) {
+        @Px iconSizePx: Int,
+        circularClipRadius: Float?) {
+    if (circularClipRadius != null && circularClipRadius <= 0f) {
+        return
+    }
+
     val (centerX, centerY) = centerCoordinate
 
     val left = centerX - (0.5 * iconSizePx)
@@ -68,6 +73,9 @@ internal fun Canvas.drawDrawable(
 
     save()
     translate(0F, canvasY)
+    if (circularClipRadius != null) {
+        clipPath(Path().apply { addCircle(centerX, centerY, circularClipRadius, Path.Direction.CCW) })
+    }
     drawable.setColorFilter(colorInt, PorterDuff.Mode.SRC_IN)
     drawable.draw(this)
     restore()

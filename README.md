@@ -9,7 +9,7 @@
 ## Download
 
 ```groovy
-implementation 'nz.co.trademe.covert:covert:1.0.0'
+implementation 'nz.co.trademe.covert:covert:2.0.0'
 ```
 
 ## Usage
@@ -41,6 +41,15 @@ override fun onBindViewHolder(viewHolder: RecyclerView.ViewHolder, index: Int) {
     covert.drawCornerFlag(viewHolder)
     ...
 }
+```
+## Swipe Refresh Layouts
+In some cases, swipe refresh layouts may consume touch events that Covert uses, leading to janky animations. To address this, you can add the following line to the builder.
+```kotlin
+Covert.with(covertConfig)
+                .setIsActiveCallback { ...}
+                .doOnSwipe { viewHolder, _ -> ...}
+                .disablePullToRefreshOnSwipe(swipeRefreshLayout)
+                .attachTo(recyclerView)
 ```
 
 ## Optimisations

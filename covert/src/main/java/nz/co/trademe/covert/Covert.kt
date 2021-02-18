@@ -8,23 +8,23 @@ import android.graphics.drawable.Drawable
 import android.os.Build
 import android.os.VibrationEffect
 import android.os.Vibrator
-import androidx.annotation.ColorRes
-import androidx.annotation.DimenRes
-import androidx.annotation.DrawableRes
-import androidx.vectordrawable.graphics.drawable.VectorDrawableCompat
-import androidx.core.content.ContextCompat
-import androidx.interpolator.view.animation.FastOutLinearInInterpolator
-import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
-import androidx.recyclerview.widget.RecyclerView
-import androidx.recyclerview.widget.ItemTouchHelper
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageView
+import androidx.annotation.ColorRes
+import androidx.annotation.DimenRes
+import androidx.annotation.DrawableRes
+import androidx.core.content.ContextCompat
+import androidx.interpolator.view.animation.FastOutLinearInInterpolator
+import androidx.recyclerview.widget.ItemTouchHelper
+import androidx.recyclerview.widget.RecyclerView
+import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
+import androidx.vectordrawable.graphics.drawable.VectorDrawableCompat
 import io.reactivex.BackpressureStrategy
 import io.reactivex.android.schedulers.AndroidSchedulers
+import io.reactivex.disposables.Disposable
 import io.reactivex.subjects.PublishSubject
-import nz.co.trademe.covert.canvas.CanvasDrawable
 import nz.co.trademe.covert.canvas.*
 import nz.co.trademe.covert.model.AnimationData
 import nz.co.trademe.covert.model.ColorChange
@@ -107,11 +107,15 @@ class Covert private constructor(
     private var listenerNotified: Boolean = false
     private var isReturning: Boolean = false
     private var flagRenderedOnReturn: Boolean = false
+
     // Ternary variable representing if the viewHolder started out swiping as active or inactive
     private var isViewHolderCurrentlyActive: Boolean? = null
 
     // Optimisation for not notifying the RecyclerView at more than 60fps
     private val updateSubject = PublishSubject.create<Int>()
+
+    private val itemTouchHelper: ItemTouchHelper
+    private val updateDisposable: Disposable
 
     companion object {
         const val SKIP_FULL_BIND_PAYLOAD = "swipe_action_skip_full_bind_payload"
@@ -121,7 +125,9 @@ class Covert private constructor(
     }
 
     init {
-        ItemTouchHelper(this).attachToRecyclerView(recyclerView)
+        itemTouchHelper = ItemTouchHelper(this).apply {
+            attachToRecyclerView(recyclerView)
+        }
 
         recyclerView.itemAnimator = null
 
@@ -135,13 +141,21 @@ class Covert private constructor(
 
         // Optimization - The following subject ensures that we only ever notify the RecyclerView of item
         // changes at 60fps max
-        updateSubject
+        updateDisposable = updateSubject
                 .toFlowable(BackpressureStrategy.DROP)
                 .debounce(TIME_PER_FRAME_MS, TimeUnit.MILLISECONDS)
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe {
                     recyclerView.adapter?.notifyItemChanged(it, SKIP_FULL_BIND_PAYLOAD)
                 }
+    }
+
+    /**
+     * Cleans up and detaches recycler view
+     */
+    fun destroy() {
+        itemTouchHelper.attachToRecyclerView(null)
+        updateDisposable.dispose()
     }
 
     /**
@@ -156,17 +170,17 @@ class Covert private constructor(
 
         // Background icon lift drawable
         val backgroundIconDrawable = IconLiftCanvasDrawable(
-            liftStartProportion = ANIMATION_THRESHOLD_PROPORTION - ICON_LIFT_ANIMATION_OFFSET_PROPORTION,
-            bounceAnimationData = AnimationData(
-                startProportion = SWIPE_THRESHOLD_PROPORTION,
-                duration = BOUNCE_DURATION
-            ),
-            maxIconScaleProportion = MAX_LIFT_SCALE,
-            iconInsetPx = iconInset.toInt(),
-            iconSizePx = ICON_DEFAULT_SIZE_DP.toPx(context).toInt(),
-            iconColor = ContextCompat.getColor(context, covertConfig.inactiveIcon.startColorRes),
-            icon = (VectorDrawableCompat.create(context.resources, covertConfig.inactiveIcon.iconRes, context.theme) as Drawable).mutate(),
-            clipStartProportion = null
+                liftStartProportion = ANIMATION_THRESHOLD_PROPORTION - ICON_LIFT_ANIMATION_OFFSET_PROPORTION,
+                bounceAnimationData = AnimationData(
+                        startProportion = SWIPE_THRESHOLD_PROPORTION,
+                        duration = BOUNCE_DURATION
+                ),
+                maxIconScaleProportion = MAX_LIFT_SCALE,
+                iconInsetPx = iconInset.toInt(),
+                iconSizePx = ICON_DEFAULT_SIZE_DP.toPx(context).toInt(),
+                iconColor = ContextCompat.getColor(context, covertConfig.inactiveIcon.startColorRes),
+                icon = (VectorDrawableCompat.create(context.resources, covertConfig.inactiveIcon.iconRes, context.theme) as Drawable).mutate(),
+                clipStartProportion = null
         )
 
         // Circular reveal drawable
@@ -301,7 +315,8 @@ class Covert private constructor(
 
                 if (drawables.isNotEmpty()) {
                     // Find the total margin applied to the ViewHolder such that animations are always draw within itemView bounds
-                    val viewHolderMarginY = (viewHolder.itemView.layoutParams as? RecyclerView.LayoutParams)?.let { it.leftMargin + it.rightMargin } ?: 0
+                    val viewHolderMarginY = (viewHolder.itemView.layoutParams as? RecyclerView.LayoutParams)?.let { it.leftMargin + it.rightMargin }
+                            ?: 0
 
                     val parentMetrics = ParentMetrics(
                             width = viewHolder.itemView.measuredWidth.toFloat() - viewHolderMarginY.toFloat(),

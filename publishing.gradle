@@ -1,39 +1,80 @@
-if (project.plugins.hasPlugin("com.android.library")) {
 
-    apply plugin: 'digital.wup.android-maven-publish'
+apply plugin: 'maven-publish'
+apply plugin: 'signing'
+apply plugin: 'org.jetbrains.dokka'
 
-    project.afterEvaluate {
-        task sourcesJar(type: Jar) {
-            from android.sourceSets.main.java.srcDirs
-        }
-    }
+task androidSourcesJar(type: Jar) {
+    archiveClassifier.set('sources')
 
-    task androidSourcesJar(type: Jar) {
-        classifier = 'sources'
-        from android.sourceSets.main.java.source
-    }
+    // For Android libraries
+    from android.sourceSets.main.java.srcDirs
+    from android.sourceSets.main.kotlin.srcDirs
 
+}
+artifacts {
+    archives androidSourcesJar
+}
+
+
+
+afterEvaluate {
     publishing {
+
         publications {
-            aar(MavenPublication) {
-                from project.components.android
-                artifact project.androidSourcesJar
+            release(MavenPublication) {
                 groupId project.ext.group
-                artifactId project.name
+                artifactId project.ext.repo
                 version project.ext.version
-            }
-        }
 
-        repositories {
-            maven {
-                name 'Bintray'
-                url "https://api.bintray.com/maven/${project.org}/${project.repo}/${project.name}/;publish=1"
+                // Two artifacts, the `aar` (or `jar`) and the sources
+                if (project.plugins.findPlugin("com.android.library")) {
+                    from components.release
+                }
 
-                credentials {
-                    username BINTRAY_USERNAME
-                    password BINTRAY_API_KEY
+                artifact androidSourcesJar
+
+                // metadata
+                pom {
+                    name = project.ext.repo
+                    description = 'SDK'
+                    url = project.ext.url
+                    licenses {
+                        license {
+                            name = 'Covert License'
+                            url = 'https://github.com/TradeMe/Covert/blob/master/LICENSE'
+                        }
+                    }
+                    developers {
+                        developer {
+                            id = 'sabinmj'
+                            name = 'Sabin'
+                            email = 'sabin.mj@gmail.com'
+                        }
+                        // Add all other devs here...
+                    }
+
+                    // Version control info - if you're using GitHub, follow the
+                    // format as seen here
+                    scm {
+                        connection = project.ext.connection
+                        developerConnection = project.ext.developerConnection
+                        url = project.ext.url
+
+                    }
                 }
             }
         }
     }
+}
+signing {
+    useInMemoryPgpKeys(
+            rootProject.ext["signing.keyId"],
+            rootProject.ext["signing.key"],
+            rootProject.ext["signing.password"],
+    )
+    sign publishing.publications
+}
+java {
+    sourceCompatibility = JavaVersion.VERSION_1_8
+    targetCompatibility = JavaVersion.VERSION_1_8
 }

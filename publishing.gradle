@@ -5,16 +5,26 @@ apply plugin: 'org.jetbrains.dokka'
 
 task androidSourcesJar(type: Jar) {
     archiveClassifier.set('sources')
+    if (project.plugins.findPlugin("com.android.library")) {
+        // For Android libraries
+        from android.sourceSets.main.java.srcDirs
+        from android.sourceSets.main.kotlin.srcDirs
+    } else {
+        from sourceSets.main.java.srcDirs
+        from sourceSets.main.kotlin.srcDirs
+    }
 
-    // For Android libraries
-    from android.sourceSets.main.java.srcDirs
-    from android.sourceSets.main.kotlin.srcDirs
 
 }
+task javadocJar(type: Jar, dependsOn: dokkaJavadoc) {
+    archiveClassifier.set('javadoc')
+    from dokkaJavadoc.outputDirectory
+}
+
 artifacts {
     archives androidSourcesJar
+    archives javadocJar
 }
-
 
 
 afterEvaluate {
@@ -26,12 +36,14 @@ afterEvaluate {
                 artifactId project.ext.repo
                 version project.ext.version
 
-                // Two artifacts, the `aar` (or `jar`) and the sources
                 if (project.plugins.findPlugin("com.android.library")) {
                     from components.release
+                } else {
+                    from components.java
                 }
 
                 artifact androidSourcesJar
+                artifact javadocJar
 
                 // metadata
                 pom {

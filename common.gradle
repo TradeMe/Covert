@@ -1,6 +1,6 @@
 ext.version = "2.0.1"
 ext.group = "nz.co.trademe.covert"
-ext.repo = "Covert"
+ext.repo = "covert"
 ext.org = "trademe"
 ext.scm = 'https://github.com/TradeMe/Covert.git'
 ext.connection = 'scm:git:github.com/TradeMe/Covert.git'

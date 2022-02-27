@@ -23,11 +23,20 @@ if (secretPropsFile.exists()) {
     ext["signing.key"] = System.getenv('SIGNING_KEY')
     ext["snapshot"] = System.getenv('SNAPSHOT')
 }
+if (Boolean.parseBoolean(snapshot)) {
+    ext["rootVersionName"] = project.ext.version + "-SNAPSHOT"
+} else {
+    ext["rootVersionName"] = project.ext.version
+}
+
 
 // Set up Sonatype repository
 nexusPublishing {
     repositories {
         sonatype {
+            useStaging.set(provider {
+                !Boolean.parseBoolean(snapshot)
+            })
             stagingProfileId = sonatypeStagingProfileId
             username = ossrhUsername
             password = ossrhPassword

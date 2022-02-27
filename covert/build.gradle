@@ -3,6 +3,10 @@ apply plugin: 'com.android.library'
 apply plugin: 'kotlin-android'
 apply plugin: 'kotlin-android-extensions'
 
+ext {
+    PUBLISH_VERSION = rootVersionName
+}
+
 apply from: '../common.gradle'
 apply from: '../publishing.gradle'
 
@@ -17,9 +21,6 @@ android {
     }
 }
 
-ext {
-    name = "Covert"
-}
 
 dependencies {
     implementation fileTree(dir: 'libs', include: ['*.jar'])

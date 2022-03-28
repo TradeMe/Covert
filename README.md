@@ -9,7 +9,7 @@
 ## Download
 
 ```groovy
-implementation 'nz.co.trademe.covert:covert:2.0.0'
+implementation 'nz.co.trademe.covert:covert:2.0.1'
 ```
 
 ## Usage
